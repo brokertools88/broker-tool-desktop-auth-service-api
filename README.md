@@ -1,13 +1,62 @@
-# 🔐 InsureCove Authentication Service
+# InsureCove Authentication Service
 
-A production-ready FastAPI authentication service following 2024 REST API standards with Supabase integration, AWS Secrets Manager, and comprehensive monitoring.
+A production-ready FastAPI-based authentication service with comprehensive security features, AWS Secrets Manager integration, and RESTful API design following 2024 standards.
+
+## 🏗️ Architecture Overview
+
+```
+app/
+├── auth/                    # Authentication modules
+│   ├── aws_secrets.py      # AWS Secrets Manager integration
+│   ├── supabase_auth.py    # Supabase authentication (base)
+│   └── auth_adapter.py     # API adapter layer
+├── core/                   # Core utilities
+│   ├── config.py          # Configuration management
+│   ├── exceptions.py      # Exception handling
+│   ├── security.py        # Security utilities
+│   └── logging_config.py  # Logging configuration
+├── api/                    # API routes
+│   ├── auth_routes.py     # Authentication endpoints
+│   ├── health_routes.py   # Health check endpoints
+│   └── metrics_routes.py  # Metrics endpoints
+├── models.py              # Pydantic models
+└── main.py               # FastAPI application
+```
 
 ## 🚀 Features
 
-- **FastAPI Framework** - Modern, fast, and type-safe API development
-- **Supabase Integration** - Secure user authentication and management
-- **AWS Secrets Manager** - Production-grade secret management
-- **JWT Authentication** - Stateless token-based authentication
+### Authentication & Security
+- ✅ JWT token generation and validation
+- ✅ Secure password hashing with bcrypt
+- ✅ AWS Secrets Manager integration
+- ✅ Role-based access control (RBAC)
+- ✅ Rate limiting and security headers
+- ✅ CORS configuration
+- ✅ Password strength validation
+- ✅ Account lockout protection
+
+### API Design
+- ✅ RESTful endpoints following 2024 standards
+- ✅ RFC 9457 Problem Details for HTTP APIs
+- ✅ Comprehensive input validation
+- ✅ OpenAPI/Swagger documentation
+- ✅ Structured error responses
+- ✅ Request/response logging
+
+### Monitoring & Operations
+- ✅ Health check endpoints (K8s ready)
+- ✅ Prometheus metrics
+- ✅ Structured logging with JSON support
+- ✅ Performance monitoring
+- ✅ Security event logging
+- ✅ System metrics collection
+
+### User Management
+- ✅ Broker and client registration
+- ✅ Email verification support
+- ✅ Password reset functionality
+- ✅ Session management
+- ✅ Multi-device logout
 - **Rate Limiting** - Request throttling with Redis
 - **Health Checks** - Kubernetes-compatible health monitoring
 - **Metrics Collection** - Prometheus metrics integration

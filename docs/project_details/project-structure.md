@@ -1,4 +1,8 @@
-# 📁 InsureCove Authentication Service - Project Structure
+# 📁 InsureCove Authentic├── 📁 docs/                          # ✅ Documentation
+│   ├── 📄 API_DOCUMENTATION.md      # ✅ Complete API documentation
+│   ├── 📄 ARCHITECTURE_DIAGRAM.md   # ✅ Mermaid architecture diagrams
+│   ├── 📄 FILE_LINKAGE_DOCUMENTATION.md # ✅ File usage and linkage guide
+│   ├── 📄 aws-secrets-readme.md     # ✅ AWS Secrets setup guideon Service - Project Structure
 
 ## 🏗️ **Complete Project Structure**
 
@@ -6,48 +10,60 @@
 broker-tool-desktop-auth-service-api/
 ├── 📁 app/                           # Main application directory
 │   ├── 🐍 main.py                    # ✅ FastAPI application entry point
-│   ├── 📁 core/                      # ✅ Core utilities and configurations
-│   │   ├── 🐍 __init__.py
+│   ├── � models.py                  # ✅ Pydantic API models and schemas
+│   ├── �📁 core/                      # ✅ Core utilities and configurations
+│   │   ├── 🐍 __init__.py            # ✅ Core module exports
 │   │   ├── 🐍 config.py             # ✅ Pydantic settings management
-│   │   └── 🐍 exceptions.py         # ✅ RFC 9457 error handling
-│   ├── 📁 api/                       # ✅ API route modules
-│   │   ├── 🐍 __init__.py
+│   │   ├── 🐍 exceptions.py         # ✅ RFC 9457 error handling
+│   │   ├── � security.py           # ✅ Security utilities and middleware
+│   │   └── 🐍 logging_config.py     # ✅ Structured logging configuration
+│   ├── �📁 api/                       # ✅ API route modules
+│   │   ├── 🐍 __init__.py            # ✅ API module initialization
 │   │   ├── 🐍 auth_routes.py        # ✅ Authentication endpoints
 │   │   ├── 🐍 health_routes.py      # ✅ Health check endpoints
 │   │   └── 🐍 metrics_routes.py     # ✅ Metrics and monitoring
-│   └── 📁 auth/                      # ✅ Authentication logic (legacy)
-│       ├── 🐍 __init__.py
+│   └── 📁 auth/                      # ✅ Authentication logic
+│       ├── 🐍 __init__.py            # ✅ Auth module initialization
 │       ├── 🐍 supabase_auth.py      # ✅ Core Supabase integration
-│       ├── 🐍 aws_secrets.py        # ✅ AWS Secrets Manager
-│       └── 📁 tests/                 # ✅ Test cases
-│           ├── 🐍 __init__.py
-│           ├── 🐍 jwt_generator.py   # ✅ Comprehensive tests
-│           └── 📁 README.md
+│       ├── 🐍 aws_secrets.py        # ✅ AWS Secrets Manager integration
+│       └── � auth_adapter.py       # ✅ Auth manager adapter
 ├── 📁 docs/                          # ✅ Documentation
-│   ├── 📄 auth-service-design.md    # ✅ Complete design document
-│   ├── 📄 implementation-gap-analysis.md # ✅ Implementation analysis
-│   ├── 📄 project-rename-guide.md   # ✅ Rename guide
-│   └── 📄 project-structure.md      # ✅ This file
-├── 📁 monitoring/                    # 🔄 Monitoring configuration
-│   ├── 📄 prometheus.yml            # ❌ Need to create
-│   └── 📁 grafana/                   # ❌ Need to create
+│   ├── 📄 API_DOCUMENTATION.md      # ✅ Complete API documentation
+│   ├── � aws-secrets-readme.md     # ✅ AWS Secrets setup guide
+│   ├── � project_details/          # ✅ Project documentation
+│   │   ├── 📄 project-overview.md   # ✅ Project overview
+│   │   └── � project-structure.md  # ✅ This file
+│   ├── 📁 design/                    # ✅ Design documents
+│   │   └── 📄 auth-service-design.md # ✅ Complete design document
+│   ├── � api_standard/              # ✅ API standards
+│   │   ├── 📄 API-Standards-Update-Summary.md # ✅ API standards summary
+│   │   └── 📄 RESTful-API-Standards-2024.md   # ✅ RESTful API standards
+│   └── 📁 secrets/                   # ✅ Secrets documentation
+│       ├── 📄 aws-secrets-setup-guideline.md  # ✅ AWS setup guide
+│       ├── 📄 secrets-created-summary.md      # ✅ Secrets summary
+│       └── 📄 SETUP-GUIDE.md                  # ✅ Setup guide
+├── 📁 monitoring/                    # 🔄 Monitoring configuration (optional)
+│   ├── 📄 prometheus.yml            # ❌ Optional: Prometheus config
+│   └── 📁 grafana/                   # ❌ Optional: Grafana config
 │       ├── 📁 dashboards/
 │       └── 📁 datasources/
-├── 📁 tests/                         # 🔄 Additional tests
-│   ├── 📁 unit/                      # ❌ Need to create
-│   ├── 📁 integration/               # ❌ Need to create
-│   └── 📁 performance/               # ❌ Need to create
-├── 📁 scripts/                       # 🔄 Deployment scripts
-│   ├── 📄 setup.sh                   # ❌ Need to create
-│   ├── 📄 deploy.sh                  # ❌ Need to create
-│   └── 📄 health-check.sh            # ❌ Need to create
-├── 📄 requirements.txt               # ✅ Updated with all dependencies
+├── 📁 tests/                         # 🔄 Additional tests (optional)
+│   ├── 📁 unit/                      # ❌ Optional: Unit tests
+│   ├── 📁 integration/               # ❌ Optional: Integration tests
+│   └── 📁 performance/               # ❌ Optional: Performance tests
+├── 📁 scripts/                       # 🔄 Deployment scripts (optional)
+│   ├── 📄 setup.sh                   # ❌ Optional: Setup script
+│   ├── 📄 deploy.sh                  # ❌ Optional: Deployment script
+│   └── 📄 health-check.sh            # ❌ Optional: Health check script
+├── 🐍 test_setup.py                  # ✅ Comprehensive setup test
+├── 🐍 generate_jwt_secret.py         # ✅ JWT secret generation utility
+├── 📄 requirements.txt               # ✅ All dependencies with versions
 ├── 📄 Dockerfile                     # ✅ Production-ready container
 ├── 📄 docker-compose.yml             # ✅ Development environment
 ├── 📄 .env.example                   # ✅ Environment template
 ├── 📄 .gitignore                     # ✅ Git ignore rules
 ├── 📄 README.md                      # ✅ Comprehensive documentation
-└── 📄 LICENSE                        # ❌ Need to create
+└── 📄 LICENSE                        # ❌ Optional: Project license
 ```
 
 ---
@@ -55,18 +71,23 @@ broker-tool-desktop-auth-service-api/
 ## 🎯 **Implementation Status**
 
 ### ✅ **Completed (Production Ready)**
-- **FastAPI Application** (`app/main.py`) - Complete with 2024 standards
-- **Core Configuration** (`app/core/`) - Pydantic settings and RFC 9457 errors
-- **API Routes** (`app/api/`) - RESTful endpoints with proper validation
-- **Authentication Logic** (`app/auth/`) - Supabase integration and JWT handling
-- **Documentation** (`docs/`) - Comprehensive design and implementation guides
-- **Containerization** (`Dockerfile`, `docker-compose.yml`) - Production-ready containers
+- **FastAPI Application** (`app/main.py`) - Complete with 2024 standards and middleware
+- **API Models** (`app/models.py`) - Pydantic v2 models for all endpoints
+- **Core Configuration** (`app/core/`) - Settings, exceptions, security, and logging
+- **API Routes** (`app/api/`) - RESTful endpoints with proper validation and error handling
+- **Authentication Logic** (`app/auth/`) - Supabase integration, AWS Secrets, and adapter
+- **Documentation** (`docs/`) - API docs, design documents, and setup guides
+- **Testing** (`test_setup.py`) - Comprehensive setup validation
+- **Utilities** (`generate_jwt_secret.py`) - JWT secret generation and rotation
 - **Dependencies** (`requirements.txt`) - All required packages with versions
+- **Environment** (`.env.example`) - Complete environment template
+- **Documentation** (`README.md`) - Comprehensive setup and usage guide
 
-### 🔄 **In Progress (Optional)**
+### 🔄 **Optional (Future Enhancements)**
 - **Monitoring Setup** (`monitoring/`) - Prometheus and Grafana configurations
-- **Test Suite** (`tests/`) - Unit, integration, and performance tests
-- **Scripts** (`scripts/`) - Deployment and management scripts
+- **Extended Test Suite** (`tests/`) - Unit, integration, and performance tests
+- **Deployment Scripts** (`scripts/`) - Automated deployment and management
+- **Containerization** (`Dockerfile`, `docker-compose.yml`) - Production containers
 - **License** (`LICENSE`) - Project license file
 
 ---
@@ -153,6 +174,16 @@ broker-tool-desktop-auth-service-api/
 - Production security
 ```
 
+#### `app/auth/auth_adapter.py`
+```python
+# Authentication adapter bridge:
+- Bridges SupabaseAuthManager with API models
+- Converts internal auth responses to API format
+- Standardizes authentication interface
+- Handles data transformation and validation
+- Provides clean API for route handlers
+```
+
 ### **🐳 Containerization**
 
 #### `Dockerfile`
@@ -176,6 +207,39 @@ broker-tool-desktop-auth-service-api/
 ```
 
 ### **📄 Documentation**
+
+#### `docs/API_DOCUMENTATION.md`
+```markdown
+# Comprehensive API documentation:
+- All authentication endpoints with examples
+- Health check and metrics endpoints
+- Request/response schemas
+- Error response formats (RFC 9457)
+- Rate limiting and security features
+- Testing examples (cURL, Python)
+- OpenAPI integration details
+```
+
+#### `docs/ARCHITECTURE_DIAGRAM.md`
+```markdown
+# Complete architecture documentation:
+- System architecture overview (Mermaid)
+- Request flow diagrams
+- Component architecture
+- Deployment architecture
+- Data flow architecture
+- Technical stack overview
+```
+
+#### `docs/FILE_LINKAGE_DOCUMENTATION.md`
+```markdown
+# File usage and linkage guide:
+- Purpose and function of each Python file
+- Dependencies between modules
+- Integration points and data flow
+- Import patterns and best practices
+- Module summary table
+```
 
 #### `README.md`
 ```markdown
