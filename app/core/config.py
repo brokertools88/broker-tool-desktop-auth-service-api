@@ -14,261 +14,213 @@ import os
 from typing import List, Optional, Union, Any, Dict
 from functools import lru_cache
 from pathlib import Path
-
-try:
-    from pydantic_settings import BaseSettings
-    from pydantic import Field, field_validator, model_validator
-except ImportError:
-    # Fallback for older pydantic versions
-    from pydantic import BaseSettings, Field, validator as field_validator, root_validator as model_validator
+from pydantic import BaseModel, Field, field_validator
 
 
-class DatabaseSettings(BaseSettings):
+class DatabaseSettings(BaseModel):
     """Database configuration settings"""
     
     # Supabase Configuration
-    supabase_url: Optional[str] = Field(default=None, env="SUPABASE_URL")
-    supabase_anon_key: Optional[str] = Field(default=None, env="SUPABASE_ANON_KEY")
-    supabase_service_key: Optional[str] = Field(default=None, env="SUPABASE_SERVICE_KEY")
-    database_password: Optional[str] = Field(default=None, env="DATABASE_PASSWORD")
+    supabase_url: Optional[str] = None
+    supabase_anon_key: Optional[str] = None
+    supabase_service_key: Optional[str] = None
+    database_password: Optional[str] = None
     
-    # Connection settings
-    max_connections: int = Field(default=10, env="DB_MAX_CONNECTIONS")
-    connection_timeout: int = Field(default=30, env="DB_CONNECTION_TIMEOUT")
-    
-    model_config = {
-        "env_prefix": "DB_",
-        "case_sensitive": False
-    }
+    # Connection Pool Settings
+    max_connections: int = 10
+    connection_timeout: int = 30
 
 
-class AWSSettings(BaseSettings):
-    """AWS configuration settings"""
+class AWSSettings(BaseModel):
+    """AWS service configuration"""
     
     # AWS Credentials
-    aws_access_key_id: Optional[str] = Field(default=None, env="AWS_ACCESS_KEY_ID")
-    aws_secret_access_key: Optional[str] = Field(default=None, env="AWS_SECRET_ACCESS_KEY")
-    aws_region: str = Field(default="ap-east-1", env="AWS_DEFAULT_REGION")
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    aws_region: str = "ap-east-1"
     
-    # Proxy settings for corporate networks
-    http_proxy: Optional[str] = Field(default=None, env="HTTP_PROXY")
-    https_proxy: Optional[str] = Field(default=None, env="HTTPS_PROXY")
+    # Proxy Configuration
+    http_proxy: Optional[str] = None
+    https_proxy: Optional[str] = None
     
-    # Secrets Manager settings
-    secret_prefix: str = Field(default="insurecove", env="SECRET_PREFIX")
-    secret_cache_ttl: int = Field(default=300, env="SECRET_CACHE_TTL")  # 5 minutes
+    # Secrets Manager Configuration
+    secret_prefix: str = "insurecove"
+    secret_cache_ttl: int = 300  # 5 minutes
     
-    # S3 settings
-    s3_bucket_name: Optional[str] = Field(default=None, env="S3_BUCKET_NAME")
-    max_file_size_mb: int = Field(default=10, env="MAX_FILE_SIZE_MB")
-    
-    model_config = {
-        "env_prefix": "AWS_",
-        "case_sensitive": False
-    }
+    # S3 Configuration
+    s3_bucket_name: Optional[str] = None
+    max_file_size_mb: int = 10
 
 
-class JWTSettings(BaseSettings):
-    """JWT configuration settings"""
+class JWTSettings(BaseModel):
+    """JWT token configuration"""
     
-    # JWT Configuration (will be overridden by AWS Secrets Manager in production)
-    jwt_secret_key: Optional[str] = Field(default=None, env="JWT_SECRET_KEY")
-    jwt_algorithm: str = Field(default="HS256", env="JWT_ALGORITHM")
-    jwt_issuer: str = Field(default="insurecove-auth", env="JWT_ISSUER")
-    jwt_audience: str = Field(default="insurecove-api", env="JWT_AUDIENCE")
+    # JWT Configuration
+    jwt_secret_key: Optional[str] = None
+    jwt_algorithm: str = "HS256"
+    jwt_issuer: str = "insurecove-auth"
+    jwt_audience: str = "insurecove-api"
     
-    # Token expiration settings
-    access_token_expire_minutes: int = Field(default=30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
-    refresh_token_expire_days: int = Field(default=7, env="REFRESH_TOKEN_EXPIRE_DAYS")
-    service_token_expire_hours: int = Field(default=24, env="SERVICE_TOKEN_EXPIRE_HOURS")
+    # Token Expiration
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 7
+    service_token_expire_hours: int = 24
     
-    # Token validation settings
-    allow_refresh_token_reuse: bool = Field(default=False, env="ALLOW_REFRESH_TOKEN_REUSE")
-    require_aud_claim: bool = Field(default=True, env="REQUIRE_AUD_CLAIM")
-    
-    model_config = {
-        "env_prefix": "JWT_",
-        "case_sensitive": False
-    }
+    # Token Settings
+    allow_refresh_token_reuse: bool = False
+    require_aud_claim: bool = True
 
 
-class SecuritySettings(BaseSettings):
-    """Security configuration settings"""
+class SecuritySettings(BaseModel):
+    """Security configuration"""
     
-    # Password settings
-    min_password_length: int = Field(default=8, env="MIN_PASSWORD_LENGTH")
-    require_uppercase: bool = Field(default=True, env="REQUIRE_UPPERCASE")
-    require_lowercase: bool = Field(default=True, env="REQUIRE_LOWERCASE")
-    require_numbers: bool = Field(default=True, env="REQUIRE_NUMBERS")
-    require_special_chars: bool = Field(default=True, env="REQUIRE_SPECIAL_CHARS")
+    # Password Requirements
+    min_password_length: int = 8
+    require_uppercase: bool = True
+    require_lowercase: bool = True
+    require_numbers: bool = True
+    require_special_chars: bool = True
     
-    # Rate limiting
-    rate_limit_requests: int = Field(default=100, env="RATE_LIMIT_REQUESTS")
-    rate_limit_window: int = Field(default=60, env="RATE_LIMIT_WINDOW")  # seconds
+    # Rate Limiting
+    rate_limit_requests: int = 100
+    rate_limit_window: int = 60  # seconds
     
-    # Session settings
-    session_timeout_minutes: int = Field(default=60, env="SESSION_TIMEOUT_MINUTES")
-    max_failed_attempts: int = Field(default=5, env="MAX_FAILED_ATTEMPTS")
-    lockout_duration_minutes: int = Field(default=15, env="LOCKOUT_DURATION_MINUTES")
+    # Session Management
+    session_timeout_minutes: int = 60
+    max_failed_attempts: int = 5
+    lockout_duration_minutes: int = 15
     
-    # CORS settings
-    allowed_origins: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:8080"],
-        env="ALLOWED_ORIGINS"
-    )
-    allowed_methods: List[str] = Field(
-        default=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        env="ALLOWED_METHODS"
-    )
-    allowed_headers: List[str] = Field(
-        default=["*"],
-        env="ALLOWED_HEADERS"
-    )
+    # CORS Settings
+    allowed_origins: List[str] = ["http://localhost:3000", "http://localhost:8080"]
+    allowed_methods: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed_headers: List[str] = ["*"]
     
-    # Encryption settings
-    encryption_key: Optional[str] = Field(default=None, env="ENCRYPTION_KEY")
-    encryption_salt: Optional[str] = Field(default=None, env="ENCRYPTION_SALT")
+    # Encryption
+    encryption_key: Optional[str] = None
+    encryption_salt: Optional[str] = None
     
-    @field_validator('allowed_origins', mode='before')
+    @field_validator('allowed_origins')
     @classmethod
-    def parse_origins(cls, v):
+    def parse_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(',')]
+            return [i.strip() for i in v.split(',')]
         return v
     
-    @field_validator('allowed_methods', mode='before')
+    @field_validator('allowed_methods')
     @classmethod
-    def parse_methods(cls, v):
+    def parse_cors_methods(cls, v: Union[str, List[str]]) -> List[str]:
         if isinstance(v, str):
-            return [method.strip().upper() for method in v.split(',')]
+            return [i.strip() for i in v.split(',')]
         return v
     
-    @field_validator('allowed_headers', mode='before')
+    @field_validator('allowed_headers')
     @classmethod
-    def parse_headers(cls, v):
+    def parse_cors_headers(cls, v: Union[str, List[str]]) -> List[str]:
         if isinstance(v, str):
-            return [header.strip() for header in v.split(',')]
+            return [i.strip() for i in v.split(',')]
         return v
-    
-    model_config = {
-        "env_prefix": "SECURITY_",
-        "case_sensitive": False
-    }
 
 
-class LoggingSettings(BaseSettings):
-    """Logging configuration settings"""
+class LoggingSettings(BaseModel):
+    """Logging configuration"""
     
-    log_level: str = Field(default="INFO", env="LOG_LEVEL")
-    log_format: str = Field(
-        default="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        env="LOG_FORMAT"
-    )
-    log_file: Optional[str] = Field(default=None, env="LOG_FILE")
-    log_max_bytes: int = Field(default=10_000_000, env="LOG_MAX_BYTES")  # 10MB
-    log_backup_count: int = Field(default=5, env="LOG_BACKUP_COUNT")
+    log_level: str = "INFO"
+    log_format: str = "json"
+    log_requests: bool = True
+    log_responses: bool = False
+    log_sql_queries: bool = False
     
-    # Structured logging
-    use_json_logging: bool = Field(default=False, env="USE_JSON_LOGGING")
-    log_requests: bool = Field(default=True, env="LOG_REQUESTS")
-    log_responses: bool = Field(default=False, env="LOG_RESPONSES")  # May contain sensitive data
+    # File Logging
+    log_file_enabled: bool = False
+    log_file_path: str = "logs/auth-service.log"
+    log_file_max_size: str = "10MB"
+    log_file_backup_count: int = 5
     
-    # Performance monitoring
-    log_slow_queries: bool = Field(default=True, env="LOG_SLOW_QUERIES")
-    slow_query_threshold: float = Field(default=1.0, env="SLOW_QUERY_THRESHOLD")  # seconds
+    # Missing attributes for compatibility
+    log_file: Optional[str] = "logs/auth-service.log"
+    log_max_bytes: int = 10485760  # 10MB
+    log_backup_count: int = 5
+    slow_query_threshold: float = 1.0  # seconds
+    use_json_logging: bool = True
     
-    model_config = {
-        "env_prefix": "LOG_",
-        "case_sensitive": False
-    }
+    # External Logging
+    sentry_dsn: Optional[str] = None
+    datadog_enabled: bool = False
+    cloudwatch_enabled: bool = False
 
 
-class CacheSettings(BaseSettings):
-    """Cache configuration settings"""
+class CacheSettings(BaseModel):
+    """Cache configuration"""
     
-    # Redis settings
-    redis_url: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
-    redis_password: Optional[str] = Field(default=None, env="REDIS_PASSWORD")
-    redis_ssl: bool = Field(default=False, env="REDIS_SSL")
+    redis_url: str = "redis://localhost:6379"
+    redis_password: Optional[str] = None
+    redis_db: int = 0
+    redis_max_connections: int = 20
+    redis_connection_timeout: int = 5
     
-    # Cache TTL settings (in seconds)
-    default_cache_ttl: int = Field(default=300, env="DEFAULT_CACHE_TTL")  # 5 minutes
-    user_cache_ttl: int = Field(default=600, env="USER_CACHE_TTL")  # 10 minutes
-    session_cache_ttl: int = Field(default=1800, env="SESSION_CACHE_TTL")  # 30 minutes
+    # Cache Expiration (seconds)
+    default_cache_ttl: int = 300  # 5 minutes
+    user_cache_ttl: int = 900     # 15 minutes
+    session_cache_ttl: int = 1800  # 30 minutes
     
-    # Cache behavior
-    cache_enabled: bool = Field(default=True, env="CACHE_ENABLED")
-    cache_key_prefix: str = Field(default="insurecove:", env="CACHE_KEY_PREFIX")
-    
-    model_config = {
-        "env_prefix": "CACHE_",
-        "case_sensitive": False
-    }
+    # Cache Prefixes
+    user_cache_prefix: str = "user:"
+    session_cache_prefix: str = "session:"
+    rate_limit_cache_prefix: str = "rate_limit:"
 
 
-class MonitoringSettings(BaseSettings):
+class MonitoringSettings(BaseModel):
     """Monitoring and metrics configuration"""
     
-    # Health check settings
-    health_check_interval: int = Field(default=30, env="HEALTH_CHECK_INTERVAL")  # seconds
-    health_check_timeout: int = Field(default=5, env="HEALTH_CHECK_TIMEOUT")  # seconds
+    enable_metrics: bool = True
+    metrics_endpoint: str = "/metrics"
+    health_endpoint: str = "/health"
     
-    # Metrics settings
-    metrics_enabled: bool = Field(default=True, env="METRICS_ENABLED")
-    metrics_port: int = Field(default=8001, env="METRICS_PORT")
+    # Prometheus Configuration
+    prometheus_enabled: bool = True
+    prometheus_endpoint: str = "/metrics/prometheus"
     
-    # Alerting
-    alert_email: Optional[str] = Field(default=None, env="ALERT_EMAIL")
-    alert_webhook: Optional[str] = Field(default=None, env="ALERT_WEBHOOK")
+    # Health Check Configuration
+    health_check_timeout: int = 5
+    health_check_interval: int = 30
     
-    # Performance thresholds
-    response_time_threshold: float = Field(default=2.0, env="RESPONSE_TIME_THRESHOLD")  # seconds
-    error_rate_threshold: float = Field(default=0.05, env="ERROR_RATE_THRESHOLD")  # 5%
-    
-    model_config = {
-        "env_prefix": "MONITORING_",
-        "case_sensitive": False
-    }
+    # Performance Monitoring
+    enable_request_timing: bool = True
+    enable_db_monitoring: bool = True
+    enable_cache_monitoring: bool = True
 
 
-class Settings(BaseSettings):
+class Settings(BaseModel):
     """Main application settings"""
     
-    # Application metadata
-    app_name: str = Field(default="InsureCove Auth Service", env="APP_NAME")
-    app_version: str = Field(default="1.0.0", env="APP_VERSION")
-    app_description: str = Field(
-        default="InsureCove Authentication and Authorization Service",
-        env="APP_DESCRIPTION"
-    )
+    # Application Info
+    app_name: str = "InsureCove Auth Service"
+    app_description: str = "Production-ready authentication service for InsureCove platform"
+    app_version: str = "1.0.0"
     
     # Environment
-    environment: str = Field(default="development", env="ENVIRONMENT")
-    debug: bool = Field(default=False, env="DEBUG")
-    testing: bool = Field(default=False, env="TESTING")
+    environment: str = "development"
+    debug: bool = False
     
-    # Server settings
-    host: str = Field(default="0.0.0.0", env="HOST")
-    port: int = Field(default=8000, env="PORT")
-    workers: int = Field(default=1, env="WORKERS")
+    # Server Configuration
+    host: str = "0.0.0.0"
+    port: int = 8000
+    workers: int = 1
     
-    # API settings
-    api_prefix: str = Field(default="/api/v1", env="API_PREFIX")
-    docs_url: Optional[str] = Field(default="/docs", env="DOCS_URL")
-    redoc_url: Optional[str] = Field(default="/redoc", env="REDOC_URL")
-    openapi_url: Optional[str] = Field(default="/openapi.json", env="OPENAPI_URL")
+    # API Configuration
+    api_prefix: str = "/api/v1"
+    docs_url: str = "/docs"
+    redoc_url: str = "/redoc"
+    openapi_url: str = "/openapi.json"
     
-    # Feature flags
-    enable_registration: bool = Field(default=True, env="ENABLE_REGISTRATION")
-    enable_email_verification: bool = Field(default=True, env="ENABLE_EMAIL_VERIFICATION")
-    enable_password_reset: bool = Field(default=True, env="ENABLE_PASSWORD_RESET")
-    enable_mfa: bool = Field(default=False, env="ENABLE_MFA")
-    enable_social_login: bool = Field(default=False, env="ENABLE_SOCIAL_LOGIN")
+    # Feature Flags
+    enable_registration: bool = True
+    enable_email_verification: bool = True
+    enable_password_reset: bool = True
+    enable_mfa: bool = False
+    enable_social_login: bool = False
     
-    # External integrations
-    mistral_api_key: Optional[str] = Field(default=None, env="MISTRAL_API_KEY")
-    
-    # Sub-configurations
+    # Component Settings
     database: DatabaseSettings = DatabaseSettings()
     aws: AWSSettings = AWSSettings()
     jwt: JWTSettings = JWTSettings()
@@ -277,116 +229,73 @@ class Settings(BaseSettings):
     cache: CacheSettings = CacheSettings()
     monitoring: MonitoringSettings = MonitoringSettings()
     
-    @field_validator('environment')
-    @classmethod
-    def validate_environment(cls, v):
-        valid_envs = ['development', 'staging', 'production', 'testing']
-        if v.lower() not in valid_envs:
-            raise ValueError(f'Environment must be one of: {valid_envs}')
-        return v.lower()
+    def __init__(self, **kwargs):
+        # Load from environment variables
+        env_values = {}
+        
+        # Simple environment variable mapping
+        env_mapping = {
+            'supabase_url': 'SUPABASE_URL',
+            'supabase_anon_key': 'SUPABASE_ANON_KEY', 
+            'supabase_service_key': 'SUPABASE_SERVICE_KEY',
+            'jwt_secret_key': 'JWT_SECRET_KEY',
+            'environment': 'ENVIRONMENT',
+            'debug': 'DEBUG',
+            'host': 'HOST',
+            'port': 'PORT'
+        }
+        
+        for field, env_var in env_mapping.items():
+            if env_var in os.environ:
+                value = os.environ[env_var]
+                # Type conversion
+                if field in ['debug']:
+                    value = value.lower() in ('true', '1', 'yes')
+                elif field in ['port']:
+                    value = int(value)
+                env_values[field] = value
+        
+        # Merge with kwargs
+        final_values = {**env_values, **kwargs}
+        super().__init__(**final_values)
     
-    @model_validator(mode='after')
-    def validate_production_settings(self):
-        """Validate production-specific requirements"""
-        environment = getattr(self, 'environment', '').lower()
-        debug = getattr(self, 'debug', False)
-        
-        if environment == 'production':
-            if debug:
-                raise ValueError('Debug mode cannot be enabled in production')
-            
-            # Check for required production settings
-            required_prod_settings = [
-                ('jwt', 'jwt_secret_key'),
-                ('database', 'supabase_url'),
-                ('aws', 'aws_region')
-            ]
-            
-            for section, setting in required_prod_settings:
-                section_obj = getattr(self, section, None)
-                if not section_obj or not getattr(section_obj, setting, None):
-                    raise ValueError(f'Production requires {section}.{setting} to be set')
-        
-        return self
+    # Computed Properties
+    @property
+    def is_development(self) -> bool:
+        return self.environment.lower() == "development"
     
     @property
     def is_production(self) -> bool:
-        """Check if running in production environment"""
-        return self.environment == 'production'
-    
-    @property
-    def is_development(self) -> bool:
-        """Check if running in development environment"""
-        return self.environment == 'development'
+        return self.environment.lower() == "production"
     
     @property
     def is_testing(self) -> bool:
-        """Check if running in testing environment"""
-        return self.environment == 'testing' or self.testing
+        return self.environment.lower() == "testing"
     
-    def get_database_url(self) -> Optional[str]:
-        """Get database URL for SQLAlchemy"""
+    @property
+    def database_url(self) -> Optional[str]:
+        """Get complete database URL"""
         if self.database.supabase_url:
-            # Convert Supabase URL to PostgreSQL URL if needed
-            return self.database.supabase_url.replace('https://', 'postgresql://')
+            return self.database.supabase_url
         return None
     
     def get_cors_origins(self) -> List[str]:
-        """Get CORS origins based on environment"""
-        if self.is_production:
-            # Only allow configured origins in production
-            return self.security.allowed_origins
-        else:
-            # Allow localhost in development
-            dev_origins = [
-                "http://localhost:3000",
-                "http://localhost:8080",
-                "http://localhost:5173",  # Vite default
-                "http://127.0.0.1:3000",
-                "http://127.0.0.1:8080"
-            ]
-            return list(set(dev_origins + self.security.allowed_origins))
-    
-    model_config = {
-        "env_file": ".env",
-        "env_file_encoding": "utf-8",
-        "case_sensitive": False,
-        "extra": "ignore"
-    }
+        """Get CORS allowed origins"""
+        return self.security.allowed_origins
 
 
 @lru_cache()
 def get_settings() -> Settings:
     """
-    Get cached application settings
+    Get cached settings instance
     
     Returns:
-        Settings: Application configuration
+        Settings: Application settings
     """
     return Settings()
 
 
-def get_environment() -> str:
-    """Get current environment"""
-    return get_settings().environment
-
-
-def is_production() -> bool:
-    """Check if running in production"""
-    return get_settings().is_production
-
-
-def is_development() -> bool:
-    """Check if running in development"""
-    return get_settings().is_development
-
-
-def is_testing() -> bool:
-    """Check if running in testing mode"""
-    return get_settings().is_testing
-
-
-# Convenience aliases for commonly used settings
+# Create settings instances for easy access
 settings = get_settings()
 db_settings = settings.database
 aws_settings = settings.aws
@@ -394,4 +303,59 @@ jwt_settings = settings.jwt
 security_settings = settings.security
 logging_settings = settings.logging
 cache_settings = settings.cache
-monitoring_settings = settings.monitoring 
+monitoring_settings = settings.monitoring
+
+# Convenience properties
+is_production = settings.is_production
+is_development = settings.is_development
+is_testing = settings.is_testing
+
+
+# Environment variable validation
+def validate_environment():
+    """Validate required environment variables"""
+    settings = get_settings()
+    
+    errors = []
+    
+    if settings.is_production:
+        # Production-specific validations
+        if not settings.database.supabase_url:
+            errors.append("SUPABASE_URL is required in production")
+        
+        if not settings.database.supabase_service_key:
+            errors.append("SUPABASE_SERVICE_KEY is required in production")
+        
+        if not settings.jwt.jwt_secret_key:
+            errors.append("JWT_SECRET_KEY is required in production")
+    
+    if errors:
+        raise ValueError(f"Environment validation failed: {', '.join(errors)}")
+    
+    return True
+
+
+# Export commonly used settings
+__all__ = [
+    "Settings",
+    "DatabaseSettings", 
+    "AWSSettings",
+    "JWTSettings",
+    "SecuritySettings",
+    "LoggingSettings",
+    "CacheSettings",
+    "MonitoringSettings",
+    "get_settings",
+    "validate_environment",
+    "settings",
+    "db_settings",
+    "aws_settings", 
+    "jwt_settings",
+    "security_settings",
+    "logging_settings",
+    "cache_settings",
+    "monitoring_settings",
+    "is_production",
+    "is_development",
+    "is_testing"
+]

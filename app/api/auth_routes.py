@@ -3,7 +3,7 @@ InsureCove Authentication Service - Authentication Routes
 
 RESTful authentication endpoints following 2024 standards:
 - POST /auth/brokers (create broker account)
-- POST /auth/clients (create client account)
+- POST /auth/clients (create client account)  
 - POST /auth/sessions (login/authenticate)
 - GET /auth/sessions/current (get current session)
 - DELETE /auth/sessions (logout)
@@ -15,7 +15,7 @@ RESTful authentication endpoints following 2024 standards:
 """
 
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials
@@ -80,8 +80,13 @@ def rate_limit(requests_per_minute: int = 60):
     return decorator
 
 
-def get_client_info(request: Request) -> Dict[str, str]:
+def get_client_info(request: Optional[Request]) -> Dict[str, str]:
     """Extract client information from request"""
+    if not request:
+        return {
+            "ip_address": "unknown",
+            "user_agent": "unknown"
+        }
     return {
         "ip_address": request.client.host if request.client else "unknown",
         "user_agent": request.headers.get("user-agent", "unknown")
@@ -286,7 +291,8 @@ async def login(
         security_logger.log_login_attempt(
             email=login_data.email,
             success=True,
-            **client_info
+            ip_address=client_info["ip_address"],
+            user_agent=client_info["user_agent"]
         )
         
         api_logger.info(
@@ -308,7 +314,8 @@ async def login(
         security_logger.log_login_attempt(
             email=login_data.email,
             success=False,
-            **client_info
+            ip_address=client_info["ip_address"],
+            user_agent=client_info["user_agent"]
         )
         raise e
     
@@ -333,8 +340,7 @@ async def login(
     description="Get information about the current authenticated session"
 )
 async def get_current_session(
-    current_user: Dict[str, Any] = Depends(auth_dependency),
-    request: Request = None
+    current_user: Dict[str, Any] = Depends(auth_dependency)
 ) -> SessionResponse:
     """Get current session information"""
     
@@ -376,12 +382,11 @@ async def get_current_session(
 )
 async def logout(
     logout_data: LogoutRequest,
-    current_user: Dict[str, Any] = Depends(auth_dependency),
-    request: Request = None
+    current_user: Dict[str, Any] = Depends(auth_dependency)
 ) -> ResponseModel:
     """Logout user and invalidate session"""
     
-    client_info = get_client_info(request)
+    client_info = get_client_info(None)
     
     try:
         # Logout user
@@ -445,11 +450,13 @@ async def refresh_token(
         tokens = await auth_manager.refresh_access_token(refresh_data.refresh_token)
         
         # Log token refresh
-        security_logger.log_token_creation(
-            user_id=tokens.get("user_id"),
-            token_type="access",
-            **client_info
-        )
+        user_id = tokens.get("user_id")
+        if user_id:
+            security_logger.log_token_creation(
+                user_id=user_id,
+                token_type="access",
+                ip_address=client_info["ip_address"]
+            )
         
         return TokenResponse(
             access_token=tokens["access_token"],
@@ -541,12 +548,11 @@ async def verify_token(
 )
 async def change_password(
     password_data: PasswordChangeRequest,
-    current_user: Dict[str, Any] = Depends(auth_dependency),
-    request: Request = None
+    current_user: Dict[str, Any] = Depends(auth_dependency)
 ) -> ResponseModel:
     """Change user password"""
     
-    client_info = get_client_info(request)
+    client_info = get_client_info(None)
     
     try:
         # Change password

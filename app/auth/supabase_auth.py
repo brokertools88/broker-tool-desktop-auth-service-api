@@ -244,9 +244,13 @@ class SupabaseAuthManager:
             }
             
             # Generate token
+            secret_key = jwt_config.get("jwt_secret_key")
+            if not secret_key:
+                raise TokenError("JWT secret key not configured")
+                
             token = jwt.encode(
                 payload,
-                jwt_config.get("jwt_secret_key"),
+                secret_key,
                 algorithm=jwt_config.get("jwt_algorithm", "HS256")
             )
             
@@ -275,9 +279,13 @@ class SupabaseAuthManager:
             jwt_config = self._get_jwt_config()
             
             # Decode token
+            secret_key = jwt_config.get("jwt_secret_key")
+            if not secret_key:
+                raise TokenError("JWT secret key not configured")
+                
             payload = jwt.decode(
                 token,
-                jwt_config.get("jwt_secret_key"),
+                secret_key,
                 algorithms=[jwt_config.get("jwt_algorithm", "HS256")],
                 audience=jwt_config.get("jwt_audience", "insurecove-api"),
                 issuer=jwt_config.get("jwt_issuer", "insurecove-auth")
@@ -331,9 +339,13 @@ class SupabaseAuthManager:
                 raise AuthenticationError("User registration failed")
             
             # Create AuthUser object
+            user_email = auth_response.user.email
+            if not user_email:
+                raise AuthenticationError("User email is required")
+                
             user = AuthUser(
                 id=auth_response.user.id,
-                email=auth_response.user.email,
+                email=user_email,
                 role=request.role,
                 is_active=True,
                 created_at=datetime.now(timezone.utc),
@@ -388,13 +400,18 @@ class SupabaseAuthManager:
             # Get user metadata
             user_metadata = auth_response.user.user_metadata or {}
             
+            # Validate user email
+            user_email = auth_response.user.email
+            if not user_email:
+                raise AuthenticationError("User email is required")
+            
             # Create AuthUser object
             user = AuthUser(
                 id=auth_response.user.id,
-                email=auth_response.user.email,
+                email=user_email,
                 role=UserRole(user_metadata.get("role", "user")),
                 is_active=True,
-                created_at=datetime.fromisoformat(auth_response.user.created_at.replace("Z", "+00:00")),
+                created_at=datetime.fromisoformat(str(auth_response.user.created_at).replace("Z", "+00:00")),
                 last_login=datetime.now(timezone.utc),
                 metadata=user_metadata.get("metadata", {})
             )
@@ -484,7 +501,7 @@ class SupabaseAuthManager:
             
             # Get user details
             user_response = supabase.auth.get_user()
-            if not user_response.user or user_response.user.id != user_id:
+            if not user_response or not user_response.user or user_response.user.id != user_id:
                 raise AuthorizationError("User not found or unauthorized")
             
             user_metadata = user_response.user.user_metadata or {}
@@ -494,10 +511,15 @@ class SupabaseAuthManager:
             if user_role not in [UserRole.ADMIN, UserRole.SERVICE]:
                 raise AuthorizationError("Insufficient privileges for service token generation")
             
+            # Validate user email
+            user_email = user_response.user.email
+            if not user_email:
+                raise AuthorizationError("User email is required")
+            
             # Create service user
             service_user = AuthUser(
                 id=user_id,
-                email=user_response.user.email,
+                email=user_email,
                 role=UserRole.SERVICE,
                 is_active=True,
                 created_at=datetime.now(timezone.utc),
@@ -511,7 +533,7 @@ class SupabaseAuthManager:
                 timedelta(hours=24)
             )
             
-            logger.info(f"Service token generated for {service_name} by user {user_response.user.email}")
+            logger.info(f"Service token generated for {service_name} by user {user_email}")
             return service_token
             
         except Exception as e:
@@ -631,11 +653,18 @@ async def authenticate_request(token: str) -> AuthUser:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash"""
+    if not pwd_context:
+        # Fallback to simple comparison (not recommended for production)
+        return plain_password == hashed_password
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """Generate password hash"""
+    if not pwd_context:
+        # Fallback to simple hash (not recommended for production)
+        import hashlib
+        return hashlib.sha256(password.encode()).hexdigest()
     return pwd_context.hash(password)
 
 

@@ -18,19 +18,14 @@ from functools import lru_cache
 
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
-try:
-    from pydantic_settings import BaseSettings
-    from pydantic import Field
-except ImportError:
-    # Fallback for older pydantic versions
-    from pydantic import BaseSettings, Field
+from pydantic import BaseModel, Field
 
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 
-class AWSSecretsConfig(BaseSettings):
+class AWSSecretsConfig(BaseModel):
     """Configuration for AWS Secrets Manager"""
     
     aws_region: str = Field(default="ap-east-1", description="AWS region")
@@ -46,13 +41,6 @@ class AWSSecretsConfig(BaseSettings):
     
     # Cache settings
     cache_ttl: int = Field(default=300, description="Cache TTL in seconds")  # 5 minutes
-    
-    model_config = {
-        "env_file": ".env",
-        "env_file_encoding": "utf-8",
-        "case_sensitive": False,
-        "extra": "ignore"
-    }
 
 
 @dataclass

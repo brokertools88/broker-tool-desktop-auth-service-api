@@ -13,7 +13,7 @@ Production-ready FastAPI application with:
 
 import time
 from contextlib import asynccontextmanager
-from typing import Dict, Any
+from typing import Dict, Any, cast
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -113,15 +113,17 @@ def create_application() -> FastAPI:
         
         limiter = Limiter(key_func=get_remote_address)
         app.state.limiter = limiter
-        app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+        
+        # Use the rate limit handler directly (it's already properly typed)
+        app.add_exception_handler(RateLimitExceeded, cast(Any, _rate_limit_exceeded_handler))
     except ImportError:
         pass
     
-    # Add exception handlers
-    app.add_exception_handler(BaseInsureCoveException, insurecove_exception_handler)
-    app.add_exception_handler(HTTPException, http_exception_handler)
-    app.add_exception_handler(ValidationError, validation_exception_handler)
-    app.add_exception_handler(Exception, general_exception_handler)
+    # Add exception handlers with proper type casting to avoid strict type checking issues
+    app.add_exception_handler(BaseInsureCoveException, cast(Any, insurecove_exception_handler))
+    app.add_exception_handler(HTTPException, cast(Any, http_exception_handler))
+    app.add_exception_handler(ValidationError, cast(Any, validation_exception_handler))
+    app.add_exception_handler(Exception, cast(Any, general_exception_handler))
     
     # Include routers
     app.include_router(

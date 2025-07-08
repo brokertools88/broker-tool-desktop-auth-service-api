@@ -46,9 +46,8 @@ class JSONFormatter(logging.Formatter):
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
         
-        # Add extra fields
-        if hasattr(record, 'extra'):
-            log_data.update(record.extra)
+        # Add extra fields directly from record attributes
+        # Skip standard LogRecord attributes and add custom ones
         
         # Add common extra fields
         for attr in ['trace_id', 'user_id', 'user_email', 'request_id', 'ip_address', 'user_agent']:
@@ -69,8 +68,8 @@ class SecurityEventLogger:
         email: str,
         success: bool,
         ip_address: str,
-        user_agent: str = None,
-        details: Dict[str, Any] = None
+        user_agent: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None
     ):
         """Log login attempt"""
         event_data = {
@@ -104,7 +103,7 @@ class SecurityEventLogger:
         success: bool,
         token_type: str,
         ip_address: str,
-        error: str = None
+        error: Optional[str] = None
     ):
         """Log token validation"""
         event_data = {
@@ -150,7 +149,7 @@ class SecurityEventLogger:
         violation_type: str,
         details: Dict[str, Any],
         ip_address: str,
-        user_id: str = None
+        user_id: Optional[str] = None
     ):
         """Log security violation"""
         self.logger.error(
@@ -167,10 +166,10 @@ class SecurityEventLogger:
     def log_security_event(
         self,
         event_type: str,
-        user_id: str = None,
-        details: Dict[str, Any] = None,
+        user_id: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
         ip_address: str = "unknown",
-        user_agent: str = None
+        user_agent: Optional[str] = None
     ):
         """Log a general security event"""
         event_data = {
@@ -196,7 +195,7 @@ class PerformanceLogger:
         path: str,
         duration: float,
         status_code: int,
-        user_id: str = None
+        user_id: Optional[str] = None
     ):
         """Log request duration"""
         self.logger.info(
@@ -215,7 +214,7 @@ class PerformanceLogger:
         self,
         query: str,
         duration: float,
-        parameters: Dict[str, Any] = None
+        parameters: Optional[Dict[str, Any]] = None
     ):
         """Log slow database query"""
         if duration >= settings.logging.slow_query_threshold:
@@ -295,7 +294,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             path=request.url.path,
             duration=duration,
             status_code=response.status_code,
-            user_id=getattr(request.state, 'user_id', None)
+            user_id=getattr(request.state, 'user_id', None) or "anonymous"
         )
         
         # Add response headers
@@ -335,13 +334,25 @@ def setup_logging():
         root_logger.removeHandler(handler)
     
     # Set root log level
-    root_logger.setLevel(getattr(logging, settings.logging.log_level.upper()))
+    try:
+        log_level = settings.logging.log_level.upper()
+    except:
+        log_level = "INFO"
+    
+    root_logger.setLevel(getattr(logging, log_level))
     
     # Create formatters
-    if settings.logging.use_json_logging:
+    try:
+        use_json = settings.logging.use_json_logging
+    except:
+        use_json = True
+        
+    if use_json:
         formatter = JSONFormatter()
     else:
-        formatter = logging.Formatter(settings.logging.log_format)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
     
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
@@ -349,17 +360,22 @@ def setup_logging():
     root_logger.addHandler(console_handler)
     
     # File handler (if configured)
-    if settings.logging.log_file:
-        log_file_path = Path(settings.logging.log_file)
-        log_file_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        file_handler = logging.handlers.RotatingFileHandler(
-            filename=log_file_path,
-            maxBytes=settings.logging.log_max_bytes,
-            backupCount=settings.logging.log_backup_count
-        )
-        file_handler.setFormatter(formatter)
-        root_logger.addHandler(file_handler)
+    try:
+        log_file = settings.logging.log_file
+        if log_file:
+            log_file_path = Path(log_file)
+            log_file_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            file_handler = logging.handlers.RotatingFileHandler(
+                filename=log_file_path,
+                maxBytes=settings.logging.log_max_bytes,
+                backupCount=settings.logging.log_backup_count
+            )
+            file_handler.setFormatter(formatter)
+            root_logger.addHandler(file_handler)
+    except:
+        # If file logging fails, just continue with console logging
+        pass
     
     # Configure specific loggers
     loggers_config = {

@@ -17,7 +17,7 @@ from datetime import datetime
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 
 logger = logging.getLogger(__name__)
@@ -251,7 +251,7 @@ class AuthorizationException(BaseInsureCoveException):
 class InsufficientPermissionsException(AuthorizationException):
     """Insufficient permissions exception"""
     
-    def __init__(self, required_permission: str, message: str = None):
+    def __init__(self, required_permission: str, message: Optional[str] = None):
         if not message:
             message = f"Insufficient permissions. Required: {required_permission}"
         super().__init__(
@@ -265,7 +265,7 @@ class InsufficientPermissionsException(AuthorizationException):
 class RoleRequiredException(AuthorizationException):
     """Role required exception"""
     
-    def __init__(self, required_role: str, user_role: str = None):
+    def __init__(self, required_role: str, user_role: Optional[str] = None):
         message = f"Role '{required_role}' is required for this action"
         super().__init__(
             message=message,
@@ -305,7 +305,7 @@ class UserException(BaseInsureCoveException):
 class UserNotFoundException(UserException):
     """User not found exception"""
     
-    def __init__(self, user_id: str = None, email: str = None):
+    def __init__(self, user_id: Optional[str] = None, email: Optional[str] = None):
         identifier = user_id or email or "unknown"
         message = f"User '{identifier}' not found"
         super().__init__(
@@ -436,7 +436,7 @@ class TooManyFailedAttemptsException(PasswordException):
 class ValidationException(BaseInsureCoveException):
     """Base validation exception"""
     
-    def __init__(self, message: str, errors: List[Dict[str, Any]] = None, **kwargs):
+    def __init__(self, message: str, errors: Optional[List[Dict[str, Any]]] = None, **kwargs):
         super().__init__(
             message=message,
             error_type=ErrorType.VALIDATION_ERROR,
@@ -449,7 +449,7 @@ class ValidationException(BaseInsureCoveException):
 class InvalidInputException(ValidationException):
     """Invalid input exception"""
     
-    def __init__(self, field: str, value: Any, reason: str = None):
+    def __init__(self, field: str, value: Any, reason: Optional[str] = None):
         message = f"Invalid value for field '{field}'"
         if reason:
             message += f": {reason}"
@@ -484,7 +484,7 @@ class InvalidEmailFormatException(ValidationException):
 class RateLimitException(BaseInsureCoveException):
     """Rate limit exceeded exception"""
     
-    def __init__(self, limit: int, window: int, retry_after: int = None):
+    def __init__(self, limit: int, window: int, retry_after: Optional[int] = None):
         message = f"Rate limit exceeded. Maximum {limit} requests per {window} seconds"
         super().__init__(
             message=message,
@@ -518,7 +518,7 @@ class ExternalServiceException(BaseInsureCoveException):
 class AWSServiceException(ExternalServiceException):
     """AWS service exception"""
     
-    def __init__(self, message: str, service: str = "AWS", error_code: str = None):
+    def __init__(self, message: str, service: str = "AWS", error_code: Optional[str] = None):
         super().__init__(
             service=service,
             message=message,
@@ -530,7 +530,7 @@ class AWSServiceException(ExternalServiceException):
 class SupabaseException(ExternalServiceException):
     """Supabase service exception"""
     
-    def __init__(self, message: str, operation: str = None):
+    def __init__(self, message: str, operation: Optional[str] = None):
         super().__init__(
             service="Supabase",
             message=message,
@@ -543,7 +543,7 @@ class SupabaseException(ExternalServiceException):
 class DatabaseException(ExternalServiceException):
     """Database service exception"""
     
-    def __init__(self, message: str, query: str = None):
+    def __init__(self, message: str, query: Optional[str] = None):
         super().__init__(
             service="Database",
             message=message,
@@ -556,7 +556,7 @@ class DatabaseException(ExternalServiceException):
 class CacheException(ExternalServiceException):
     """Cache service exception"""
     
-    def __init__(self, message: str, operation: str = None):
+    def __init__(self, message: str, operation: Optional[str] = None):
         super().__init__(
             service="Cache",
             message=message,
@@ -571,7 +571,7 @@ class CacheException(ExternalServiceException):
 class ConfigurationException(BaseInsureCoveException):
     """Configuration error exception"""
     
-    def __init__(self, message: str, config_key: str = None):
+    def __init__(self, message: str, config_key: Optional[str] = None):
         super().__init__(
             message=message,
             error_type=ErrorType.CONFIGURATION_ERROR,
@@ -588,8 +588,6 @@ class SecretNotFoundException(ConfigurationException):
     def __init__(self, secret_name: str):
         super().__init__(
             message=f"Required secret '{secret_name}' not found",
-            error_type=ErrorType.SECRET_NOT_FOUND,
-            error_code="CFG002",
             config_key=secret_name
         )
 
@@ -599,7 +597,7 @@ class SecretNotFoundException(ConfigurationException):
 class NotFoundError(BaseInsureCoveException):
     """Resource not found exception"""
     
-    def __init__(self, resource: str, identifier: str = None):
+    def __init__(self, resource: str, identifier: Optional[str] = None):
         message = f"{resource} not found"
         if identifier:
             message += f": {identifier}"
@@ -615,7 +613,7 @@ class NotFoundError(BaseInsureCoveException):
 class ConflictError(BaseInsureCoveException):
     """Resource conflict exception"""
     
-    def __init__(self, message: str, resource: str = None):
+    def __init__(self, message: str, resource: Optional[str] = None):
         super().__init__(
             message=message,
             error_type=ErrorType.CONFLICT,
@@ -744,7 +742,7 @@ async def validation_exception_handler(request: Request, exc: Exception) -> JSON
     
     # Extract validation errors
     errors = []
-    if hasattr(exc, 'errors'):
+    if isinstance(exc, ValidationError):
         for error in exc.errors():
             errors.append({
                 "field": ".".join(str(loc) for loc in error['loc']),

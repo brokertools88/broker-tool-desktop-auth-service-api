@@ -11,7 +11,7 @@ Health monitoring endpoints:
 import time
 import asyncio
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from fastapi import APIRouter, HTTPException, Request, status
 import psutil
@@ -271,8 +271,22 @@ async def detailed_health_check():
     """Detailed health check with system metrics"""
     
     try:
+        # Create a mock request for internal use
+        from starlette.requests import Request
+        from starlette.datastructures import URL, Headers
+        
+        # Create a minimal mock request
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/health",
+            "query_string": b"",
+            "headers": [],
+        }
+        mock_request = Request(scope)
+        
         # Get all service health
-        health_response = await health_check(None)
+        health_response = await health_check(mock_request)
         
         # Get system metrics
         system_metrics = get_system_metrics()

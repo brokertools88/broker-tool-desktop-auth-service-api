@@ -206,11 +206,13 @@ class AuthManagerAdapter:
         """Authenticate user and return tokens"""
         
         try:
-            # Create login request (assuming the base manager has this structure)
-            login_request = {
-                "email": email,
-                "password": password
-            }
+            # Create login request
+            from app.auth.supabase_auth import LoginRequest
+            login_request = LoginRequest(
+                email=email,
+                password=password,
+                remember_me=remember_me
+            )
             
             # Authenticate user
             token_response = await self.base_manager.authenticate_user(login_request)
@@ -312,7 +314,7 @@ class AuthManagerAdapter:
             return {
                 "valid": True,
                 "token_type": token_type,
-                "user_id": user.user_id,
+                "user_id": user.id,
                 "email": user.email,
                 "role": self._convert_api_user_role(user.role),
                 "expires_at": datetime.utcnow().replace(hour=23, minute=59, second=59),
